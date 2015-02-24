@@ -1,0 +1,9 @@
+{
+  "name": "lttng-controller",
+  "version": "1.0.0",
+  "description": "Lttng trace controller.",
+  "main": "sessionController.js",
+  "scripts": {},
+  "license": "MIT",
+  "dependencies": {}
+}
