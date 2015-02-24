@@ -1,5 +1,5 @@
 {
-  "name": "lttng-controller",
+  "name": "nftrace-controller",
   "version": "1.0.0",
   "description": "Lttng trace controller.",
   "main": "sessionController.js",
