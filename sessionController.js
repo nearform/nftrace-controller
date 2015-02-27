@@ -1,64 +1,61 @@
-var spawn = require('child_process').spawnSync;
+var spawn = require('child_process').spawn;
 
-var session = function(sessionName){
-	var session = sessionName;
-	var enabledUserlandEvents = [];
-	var enabledKernelEvents = [];
-
-	var self = {
-		enableUserlandEvent: enableUserlandEvent,
-		enableKernelEvent: enableKernelEvent,
-		start: start,
-		stop: stop,
-		destroy: destroy
-	};
-
-	function enableUserlandEvent(eventName){
-		enabledUserlandEvents.push(eventName);
-		return self;
-	}
-
-	function enableKernelEvent(eventName){
-		enabledKernelEvents.push(eventName);
-		return self;
-	}
-
-	function start(){
-		runCommands();
-		spawn('lttng', ['start']);
-		return self;
-	}
-
-	function stop(){
-		spawn('lttng', ['stop']);
-		return self;
-	}
-
-	function destroy(){
-		spawn('lttng', ['destroy', session]);
-		return self;
-	}
-
-	function runCommands(){
-		spawn('lttng', ['create', session, '--live']);
-		enabledUserlandEvents.forEach(function(event){
-			spawn('lttng', ['enable-event', '-u', event]);
-		});
-		enabledKernelEvents.forEach(function(event){
-			spawn('lttng', ['enable-event', '-k', event]);
-		});
-		return self;
-	}
-
-	return self;
+exports.createSession = function(session, cb){
+  var child = spawn('lttng', ['create', session, '--live']);
+  manageChild(child, cb);
 };
 
-module.exports = (function init(sessionName){
-	if(sessionName !== undefined){
-		return session(sessionName);
-	} else{
-		var rt = session;
-		rt.createSession = session;
-		return rt;
-	}
-})();
+exports.enableUserlandEvent = function(session, eventName, cb){
+  var child = spawn('lttng', ['enable-event', '-s', session, '-u', eventName]);
+  manageChild(child, cb);
+};
+
+exports.enableKernelEvent = function(session, eventName, cb){
+  var child = spawn('lttng', ['enable-event', '-s', session, '-k', eventName]);
+  manageChild(child, cb);
+};
+
+exports.start = function (session, cb){
+  var child = spawn('lttng', ['start', session]);
+  manageChild(child, cb);
+};
+
+exports.stop = function(session, cb){
+  var child = spawn('lttng', ['stop', session]);
+  manageChild(child, cb);
+};
+
+exports.destroy = function(session, cb){
+  var child = spawn('lttng', ['destroy', session]);
+  manageChild(child, cb);
+};
+
+exports.listUserlandEvents = function(cb){
+  var child = spawn('lttng',  ['list',  '-u']);
+  manageChild(child, cb);
+};
+
+function manageChild(child, cb){
+  var output = '';
+  child.stdout.on('data', function (data) {
+    output += data;
+  });
+
+  var error = '';
+  child.stderr.on('data', function (data) {
+    console.log(data);
+    error += data;
+  });
+
+  child.on('exit', function childFinished(code){
+    if(code !== 0){
+      error += '\nChild exited with code:' + code;
+      return cb(error, output);
+    }
+    return cb(null, output);
+  });
+
+  child.on('error', function errorOccured(err){
+    console.error(err);
+  });
+}
