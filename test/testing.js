@@ -1,13 +1,14 @@
 var sessionController = require('..');
-
-//console.log(sessionController);
+var spawn = require('child_process').spawn;
+var child;
+var finished = false;
 
 sessionController.createSession('sessionName', function(err){
   if(err){ 
     return console.error(err);
   }
   console.log('created session');
-  sessionController.enableUserlandEvent('sessionName', '-a', function(err){
+  sessionController.enableUserlandEvent('sessionName', 'node:gc*', '$ctx.vpid == 30015', function(err){
     if(err){
       return console.error(err);
     }
@@ -17,11 +18,20 @@ sessionController.createSession('sessionName', function(err){
         return console.error(err);
       }
       console.log('started');
+      sessionController.getEventStream(logStuff);
+
+      child = spawn(process.execPath, 
+                  ['battery.js', 'http://localhost:1337', 4, 4000]);
     });
   });
 });
 
+function logStuff(stuff){
+  console.log(stuff);
+}
+
 setTimeout(function(){
+  child.kill();
   sessionController.stop('sessionName', function(err){
     if(err){
       return console.error(err);
@@ -31,24 +41,8 @@ setTimeout(function(){
       if(err){ 
         return console.error(err);
       }
+      finished = true;
       console.log('destroyed session');
-      process.exit(0);
     });
   });
 }, 90000);
-
-var http = require('http');
-
-http.createServer(function (req, res) {
-  res.writeHead(200, {'Content-Type': 'text/plain'});
-  res.end('Hello World\n');
-}).listen(1337);
-
-console.log('Server should be running at http://127.0.0.1:1337/');
-
-var spawn = require('child_process').spawn;
-var child = spawn(process.execPath, 
-                  ['battery.js', 'http://localhost:1337', 4, 4000]);
-
-child.stdout.pipe(process.stdout);
-child.stderr.pipe(process.stdout);
