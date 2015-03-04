@@ -5,5 +5,7 @@
   "main": "sessionController.js",
   "scripts": {},
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {
+    "ps-nodejs": "0.0.7"
+  }
 }
