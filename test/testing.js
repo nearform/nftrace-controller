@@ -7,7 +7,8 @@ sessionController.listUserlandEvents(function(err, out){
   if(err){
     throw new Error(err);
   }
-  console.log(out);
+  var key = Object.keys(out)[0];
+  console.log(out[key].tracepoints);
 });
 /*
 sessionController.createSession('sessionName', function(err){

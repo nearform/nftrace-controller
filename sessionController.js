@@ -98,7 +98,7 @@ exports.listUserlandEvents = function(cb){
   
       // do some crazy splitting of the tracepoint string and remove the 
       // brackets not even gonna try justify this madness.
-      var tracepointObjects = {};
+      var tracepointObjects = [];
       for(var j = 0; j < arr[i].length; j++){
         arr[i][j] = arr[i][j].split('(l');
         arr[i][j][1] = 'l' + arr[i][j][1];
@@ -108,13 +108,15 @@ exports.listUserlandEvents = function(cb){
                      arr[i][j][1][0].substr(0, arr[i][j][1][0].length-1), 
                      arr[i][j][1][1].substr(0, arr[i][j][1][1].length-1)];
         var tracepointObject = {};
+        var tpName = arr[i][j][0];
         var loglevel = arr[i][j][1].split(':')[1];
         var type = arr[i][j][2].split(':')[1];
         tracepointObject = {
-          logLevel: loglevel,
+          name: tpName,
+          loglevel: loglevel,
           type: type
         };
-        tracepointObjects[arr[i][j][0]] = tracepointObject;
+        tracepointObjects.push(tracepointObject);
       }
   
       processTracepoints[process].tracepoints = tracepointObjects;
