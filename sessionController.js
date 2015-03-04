@@ -52,7 +52,11 @@ exports.listUserlandEvents = function(cb){
     if(err){
       return cb(err, stderr);
     }
+
     var processTracepoints = {}; 
+    if(stdout == 'UST events:\n-------------\nNone\n\n'){
+      return cb(null, processTracepoints);
+    }
     // the object that represents the tracepoints
   
     // take the output, split it into the different processes' and make
@@ -61,7 +65,7 @@ exports.listUserlandEvents = function(cb){
     out = out.split('-------------\n\n')[1]; 
     // get rid of the info at the start of lttng list, choose element 1
   
-      var arr = out.split('\n\n');
+    var arr = out.split('\n\n');
     arr.pop();
     // this has left the output with very few white spaces and more
     // understandable output/arrays
@@ -120,14 +124,14 @@ exports.listUserlandEvents = function(cb){
       // I'm using it to get the objects from output from ps, and filtering
       // myself.
       ps.lookup({ name: name, psargs: 'u' }, function(err, resultList ) {
-       if (err) {
-          throw new Error( err );
+        if (err) {
+          return cb(err);
         }
         var proc = resultList.filter(function(element){
           return element.pid == pid;
         })[0]; //select the first element of the filtered array.
   
-          processTracepoints[process].args = proc.arguments;
+        processTracepoints[process].args = proc.arguments;
         processTracepoints[process].doneAsync = true;
         var keys = Object.keys(processTracepoints);
         // check if all async pslookups are done.
