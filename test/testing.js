@@ -3,6 +3,14 @@ var spawn = require('child_process').spawn;
 var child;
 var finished = false;
 
+
+sessionController.listKernelEvents(function(err, out){
+  if(err){
+    throw new Error(err);
+  }
+  console.log(out);
+});
+/*
 sessionController.listUserlandEvents(function(err, out){
   if(err){
     throw new Error(err);

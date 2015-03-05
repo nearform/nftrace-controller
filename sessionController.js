@@ -159,7 +159,43 @@ exports.listKernelEvents = function(cb){
     if(err){
       return cb(err, stderr);
     }
-    cb(null, stdout);
+
+    var kernelTracepoints = []; 
+    if(stderr){
+      return cb(
+        new Error('Permissions problem with showing Kernel Tracepoints.'), 
+        stderr);
+    }
+    // take the output, split it into the different processes' and make
+    // arrays that represent those processes' & their tracepoints
+    var out = stdout.replace(/ /g, '');//replace all whitespace using a regexp
+    out = out.split('-------------\n')[1]; 
+    // get rid of the info at the start of lttng list, choose element 1
+  
+    var arr = out.split('\n');
+    while(arr[arr.length-1] ===''){
+      arr.pop();
+    }
+    for(var i = 0; i < arr.length; i++){
+        arr[i] = arr[i].split('(l');
+        arr[i][1] = 'l' + arr[i][1];
+        arr[i][1] = arr[i][1].split('(t');
+        arr[i][1][1] = 't' + arr[i][1][1];
+        arr[i] = [arr[i][0], 
+                  arr[i][1][0].substr(0, arr[i][1][0].length-1), 
+                  arr[i][1][1].substr(0, arr[i][1][1].length-1)];
+        var tracepointObject = {};
+        var tpName = arr[i][0];
+        var loglevel = arr[i][1].split(':')[1];
+        var type = arr[i][2].split(':')[1];
+        tracepointObject = {
+          name: tpName,
+          loglevel: loglevel,
+          type: type
+        };
+        kernelTracepoints.push(tracepointObject);
+      }
+    cb(null, kernelTracepoints);
   });
 };
 
@@ -180,8 +216,6 @@ function manageChild(child, cb){
       error += '\nChild exited with code:' + code;
       return cb(error, output);
     }
-    //var lines = output.split('\n');
-    //console.log(lines);
     return cb(null, output);
   });
 
