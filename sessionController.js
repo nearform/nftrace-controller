@@ -1,242 +1,123 @@
 var spawn = require('child_process').spawn;
 var exec = require('child_process').exec;
+var parseString = require('xml2js').parseString;
 
-var ps = require('ps-nodejs');
-var liner = require('./liner');
+var traceToObject = require('./traceToObjectStream');
 
 exports.createSession = function(session, cb){
-  var child = spawn('lttng', ['create', session, '--live']);
-  manageChild(child, cb);
+  var arr = ['lttng', '--mi', 'xml', 'create', session, '--live'];
+
+  var str = '';
+  arr.forEach(function(elem){
+    str+=elem + ' ';
+  });
+
+  exec(str, handleExec(cb));
 };
 
-exports.enableUserlandEvent = function(session, eventName, filter, cb){
-  var arr = ['enable-event', '-s', session, '-u', eventName];
+exports.enableUserlandEvent = function(session, eventName, pid, cb){
+  var arr = ['lttng', '--mi', 'xml', 'enable-event', 
+              '-s', session, '-u', eventName];
   if(cb){
-    arr.push('-f', filter); 
+    arr.push('--filter', '\'$ctx.vpid =='  + pid +'\'');
   } else{
-    cb = filter;
+    cb = pid;
   }
-  var child = spawn('lttng', arr);
-  manageChild(child, cb);
+
+  var str = '';
+  arr.forEach(function(elem){
+    str+=elem + ' ';
+  });
+  exec(str, handleExec(cb));
 };
 
-exports.enableKernelEvent = function(session, eventName, filter, cb){
-  var arr = ['enable-event', '-s', session, '-k', eventName];
-  if(cb){
-    arr.push('-f', filter); 
-  } else{
-    cb = filter;
-  }
+exports.enableKernelEvent = function(session, eventName, cb){
+  var arr = ['lttng', '--mi', 'xml', 'enable-event', 
+              '-s', session, '-k', eventName];
 
-  var child = spawn('lttng', arr);
-  manageChild(child, cb);
+  var str = '';
+  arr.forEach(function(elem){
+    str+=elem + ' ';
+  });
+
+  exec(str, handleExec(cb));
 };
 
 exports.start = function (session, cb){
-  var child = spawn('lttng', ['start', session]);
-  manageChild(child, cb);
+  var arr = ['lttng', '--mi', 'xml', 'start', session];
+
+  var str = '';
+  arr.forEach(function(elem){
+    str+=elem + ' ';
+  });
+
+  exec(str, handleExec(cb));
 };
 
 exports.stop = function(session, cb){
-  var child = spawn('lttng', ['stop', session]);
-  manageChild(child, cb);
+  var arr = ['lttng', '--mi', 'xml', 'stop', session];
+
+  var str = '';
+  arr.forEach(function(elem){
+    str+=elem + ' ';
+  });
+
+  exec(str, handleExec(cb));
 };
 
 exports.destroy = function(session, cb){
-  var child = spawn('lttng', ['destroy', session]);
-  manageChild(child, cb);
+  var arr = ['lttng', '--mi', 'xml', 'destroy', session];
+
+  var str = '';
+  arr.forEach(function(elem){
+    str+=elem + ' ';
+  });
+
+  exec(str, handleExec(cb));
 };
 
 exports.listUserlandEvents = function(cb){
-  exec('lttng list -u', function(err, stdout, stderr){
-    if(err){
-      return cb(err, stderr);
-    }
-
-    var processTracepoints = {}; 
-    if(stdout == 'UST events:\n-------------\nNone\n\n'){
-      return cb(null, processTracepoints);
-    }
-    // the object that represents the tracepoints
-  
-    // take the output, split it into the different processes' and make
-    // arrays that represent those processes' & their tracepoints
-    var out = stdout.replace(/ /g, '');//replace all whitespace using a regexp
-    out = out.split('-------------\n\n')[1]; 
-    // get rid of the info at the start of lttng list, choose element 1
-  
-    var arr = out.split('\n\n');
-    arr.pop();
-    // this has left the output with very few white spaces and more
-    // understandable output/arrays
-    for(var i = 0; i < arr.length; i++){
-      // split the array into strings, with the name, pid, and
-      // tracepoints of a running process.
-      arr[i] = arr[i].split('\n');
-      arr[i][0] = arr[i][0].split('-');
-      for(var j = 0; j < arr[i][0].length; j++){
-        arr[i][0][j] = arr[i][0][j].split(':');
-      }
-    }
-    // take that output, and process it into an object
-    for(i = 0; i < arr.length; i++){
-      niceClosure(i);
-    }
-    
-    function niceClosure(i){
-      // get name and pid, delete that element of the array
-      var name = arr[i][0][1][1];
-      var pid = arr[i][0][0][1];
-      arr[i].shift();
-  
-        // create object representing process
-      var process = name + '_' + pid;
-      // each process and associated tracepoints are saved in an object
-      processTracepoints[process] = {};
-      processTracepoints[process].name = name;
-      processTracepoints[process].pid = pid;
-  
-      // do some crazy splitting of the tracepoint string and remove the 
-      // brackets not even gonna try justify this madness.
-      var tracepointObjects = [];
-      for(var j = 0; j < arr[i].length; j++){
-        arr[i][j] = arr[i][j].split('(l');
-        arr[i][j][1] = 'l' + arr[i][j][1];
-        arr[i][j][1] = arr[i][j][1].split('(t');
-        arr[i][j][1][1] = 't' + arr[i][j][1][1];
-        arr[i][j] = [arr[i][j][0], 
-                     arr[i][j][1][0].substr(0, arr[i][j][1][0].length-1), 
-                     arr[i][j][1][1].substr(0, arr[i][j][1][1].length-1)];
-        var tracepointObject = {};
-        var tpName = arr[i][j][0];
-        var loglevel = arr[i][j][1].split(':')[1];
-        var type = arr[i][j][2].split(':')[1];
-        tracepointObject = {
-          name: tpName,
-          loglevel: loglevel,
-          type: type
-        };
-        tracepointObjects.push(tracepointObject);
-      }
-  
-      processTracepoints[process].tracepoints = tracepointObjects;
-  
-      // get more information on the process by doing a pid lookup
-      // NOTE: ps is broken, but it parses the output nicely.
-      // I'm using it to get the objects from output from ps, and filtering
-      // myself.
-      ps.lookup({ name: name, psargs: 'u' }, function(err, resultList ) {
-        if (err) {
-          return cb(err);
-        }
-        var proc = resultList.filter(function(element){
-          return element.pid == pid;
-        })[0]; //select the first element of the filtered array.
-  
-        processTracepoints[process].args = proc.arguments;
-        processTracepoints[process].doneAsync = true;
-        var keys = Object.keys(processTracepoints);
-        // check if all async pslookups are done.
-        var done = true;
-        keys.forEach(function(key){
-          if(!processTracepoints[key].doneAsync){
-            done = false;
-          }
-        });
-        if(done){
-          keys.forEach(function(key){
-          delete processTracepoints[key].doneAsync;
-        });
-        cb(null, processTracepoints);
-        }
-      });
-    }
+  var arr = ['lttng', '--mi', 'xml', 'list', '-u'];
+  var str = '';
+  arr.forEach(function(elem){
+    str+=elem + ' ';
   });
+
+  exec(str, handleExec(cb));
 };
 
 exports.listKernelEvents = function(cb){
-  exec('lttng list -k', function(err, stdout, stderr){
-    if(err){
-      return cb(err, stderr);
-    }
+  var arr = ['lttng', '--mi', 'xml', 'list', '-k'];
 
-    var kernelTracepoints = []; 
-    if(stderr){
-      return cb(
-        new Error('Permissions problem with showing Kernel Tracepoints.'), 
-        stderr);
-    }
-    // take the output, split it into the different processes' and make
-    // arrays that represent those processes' & their tracepoints
-    var out = stdout.replace(/ /g, '');//replace all whitespace using a regexp
-    out = out.split('-------------\n')[1]; 
-    // get rid of the info at the start of lttng list, choose element 1
-  
-    var arr = out.split('\n');
-    while(arr[arr.length-1] ===''){
-      arr.pop();
-    }
-    for(var i = 0; i < arr.length; i++){
-        arr[i] = arr[i].split('(l');
-        arr[i][1] = 'l' + arr[i][1];
-        arr[i][1] = arr[i][1].split('(t');
-        arr[i][1][1] = 't' + arr[i][1][1];
-        arr[i] = [arr[i][0], 
-                  arr[i][1][0].substr(0, arr[i][1][0].length-1), 
-                  arr[i][1][1].substr(0, arr[i][1][1].length-1)];
-        var tracepointObject = {};
-        var tpName = arr[i][0];
-        var loglevel = arr[i][1].split(':')[1];
-        var type = arr[i][2].split(':')[1];
-        tracepointObject = {
-          name: tpName,
-          loglevel: loglevel,
-          type: type
-        };
-        kernelTracepoints.push(tracepointObject);
-      }
-    cb(null, kernelTracepoints);
+  var str = '';
+  arr.forEach(function(elem){
+    str+=elem + ' ';
   });
+
+  exec(str, handleExec(cb));
 };
 
-function manageChild(child, cb){
-  var output = '';
-  child.stdout.on('data', function (data){
-    output += data;
-  });
-
-  var error = '';
-  child.stderr.on('data', function (data){
-    console.log(data);
-    error += data;
-  });
-
-  child.on('close', function childFinished(code){
-    if(code !== 0){
-      error += '\nChild exited with code:' + code;
-      return cb(error, output);
-    }
-    return cb(null, output);
-  });
-
-  child.on('error', function errorOccured(err){
-    console.error(err);
-  });
-}
-
-exports.getEventStream = function(cb){
+exports.getEventStream = function(stream){
   var child = spawn('lttng',  ['view']);
-  child.stdout.pipe(liner);
-  liner.on('readable', function () {
-    var line = liner.read();
-    while (line) {
-      cb(line);
-      line = liner.read();
-    }
-  });
+  child.stdout.pipe(traceToObject);
+  traceToObject.pipe(stream);
 };
 
-
+// simple closure.
+function handleExec(cb){
+  return function(err, stdout, stderr){
+    if(err){
+      return cb(err);
+    }
+    
+    parseString(stdout, function(err, result){
+      if(err){
+        return cb(err);
+      }
+      cb(err, result);
+    });
+  };
+}
 
 
 

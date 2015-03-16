@@ -3,11 +3,14 @@ var spawn = require('child_process').spawn;
 var child;
 var finished = false;
 
+//sessionController.getEventStream(process.stdout);
 
-sessionController.listKernelEvents(function(err, out){
+
+sessionController.listUserlandEvents(function(err, out){
   if(err){
     throw new Error(err);
   }
+  //var key = Object.keys(out)[0];
   console.log(out);
 });
 /*
