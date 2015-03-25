@@ -2,7 +2,6 @@ var spawn = require('child_process').spawn;
 var exec = require('child_process').exec;
 var parseString = require('xml2js').parseString;
 
-var traceToObject = require('./traceToObjectStream');
 
 exports.createSession = function(session, cb){
   var arr = ['lttng', '--mi', 'xml', 'create', session, '--live'];
@@ -99,6 +98,7 @@ exports.listKernelEvents = function(cb){
 
 exports.getEventStream = function(stream){
   var child = spawn('lttng',  ['view']);
+  var traceToObject = require('./traceToObjectStream');
   child.stdout.pipe(traceToObject);
   traceToObject.pipe(stream);
 };
