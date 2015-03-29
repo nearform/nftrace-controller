@@ -1,9 +1,17 @@
 {
   "name": "nftrace-controller",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Lttng trace controller.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nearform/nftrace-controller.git"
+  },
+  "author": "Glen Keane",
+  "bugs": {
+    "url": "https://github.com/nearform/nftrace-controller/issues"
+  },
+  "homepage": "https://github.com/nearform/nftrace-controller",
   "main": "sessionController.js",
-  "scripts": {},
   "license": "MIT",
   "dependencies": {
     "ps-nodejs": "0.0.7",
