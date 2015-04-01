@@ -97,6 +97,17 @@ exports.listKernelEvents = function(cb){
   exec(str, handleExec(cb));
 };
 
+exports.getCurrentSessions = function(cb){
+  var arr = ['lttng', '--mi', 'xml', 'list'];
+
+  var str = '';
+  arr.forEach(function(elem){
+    str += elem + ' ';
+  });
+
+  exec(str, handleExec(cb));
+}
+
 exports.getEventStream = function(stream){
   var child = spawn('lttng',  ['view']);
 
