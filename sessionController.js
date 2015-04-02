@@ -119,6 +119,17 @@ exports.getSessionInfo = function(session, cb){
   exec(str, handleExec(cb));
 }
 
+exports.useSession = function(session, cb){
+  var arr = ['lttng', '--mi', 'xml', 'set-session', session];
+
+  var str = '';
+  arr.forEach(function(elem){
+    str += elem + ' ';
+  });
+
+  exec(str, handleExec(cb));
+}
+
 exports.getEventStream = function(stream){
   var child = spawn('lttng',  ['view']);
 
