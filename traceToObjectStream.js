@@ -48,11 +48,19 @@ function makeStream(){
 
       trace.extInfo[i] = json5.parse(trace.extInfo[i]);
       var keys = Object.keys(trace.extInfo[i])
-      if(keys.length === 1){
+
+      // skip the last object because that is actually the eventData, 
+      // which should be saved in the trace.eventData obj
+      if(i !== trace.extInfo.length - 1 && keys.length === 1){
         trace[keys[0]] = trace.extInfo[i][keys[0]];
         trace.extInfo.splice(i, 1);
       }
     };
+
+    trace.eventData = trace.extInfo[trace.extInfo.length - 1].splice(trace.extInfo.length - 1, 1);
+    if(trace.extInfo.length === 0){
+      trace.extInfo = undefined;
+    }
 
     this.push(trace);
   }
