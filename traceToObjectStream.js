@@ -1,4 +1,5 @@
-var stream = require('stream');
+var json5 = require('json5'),
+    stream = require('stream');
 
 function makeStream(){
   var theStream = new stream.Transform( { objectMode: true } );
@@ -40,15 +41,12 @@ function makeStream(){
     trace.host = hostAndTracepoint.split(' ')[0];
     trace.tracepoint = hostAndTracepoint.split(' ')[1];
     trace.extInfo = line.match(/{(.*?)}/g);
+
     for(var i = trace.extInfo.length - 1; i >= 0; i--){
       trace.extInfo[i] = trace.extInfo[i].replace(/ =/g, ':');
       trace.extInfo[i] = trace.extInfo[i].replace(/=/g, ':');
-      var matches = trace.extInfo[i].match(/[a-zA-Z\_\.]+(?=:)/g);
-      matches.forEach(function(elem){
-        trace.extInfo[i] = trace.extInfo[i].replace(elem, '"' + elem + '"');
-      });
 
-      trace.extInfo[i] = JSON.parse(trace.extInfo[i]);
+      trace.extInfo[i] = json5.parse(trace.extInfo[i]);
       var keys = Object.keys(trace.extInfo[i])
       if(keys.length === 1){
         trace[keys[0]] = trace.extInfo[i][keys[0]];
