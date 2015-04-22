@@ -57,7 +57,7 @@ function makeStream(){
       }
     };
 
-    trace.eventData = trace.extInfo[trace.extInfo.length - 1].splice(trace.extInfo.length - 1, 1);
+    trace.eventData = trace.extInfo.splice(trace.extInfo.length - 1, 1);
     if(trace.extInfo.length === 0){
       trace.extInfo = undefined;
     }
