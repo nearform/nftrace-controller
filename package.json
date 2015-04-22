@@ -1,6 +1,6 @@
 {
   "name": "nftrace-controller",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Lttng trace controller.",
   "repository": {
     "type": "git",
