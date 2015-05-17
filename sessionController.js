@@ -18,10 +18,22 @@ exports.createSession = function(session, cb){
 exports.enableUserlandEvent = function(session, eventName, pid, cb){
   var arr = ['lttng', '--mi', 'xml', 'enable-event', 
               '-s', session, '-u', eventName];
-  if(cb){
-    arr.push('--filter', '\'$ctx.vpid =='  + pid +'\'');
-  } else{
-    cb = pid;
+  if(pid){
+    if(cb){ // assume all is right in the world
+      arr.push('--filter', '\'$ctx.vpid =='  + pid +'\'');
+    } else if(!cb) { //assume pid === cb. set it
+      cb = pid;
+    }
+  } else if(!pid) {
+    if(cb){ // pid === null and cb === cb
+      // do nothing. we can proceed
+    } else if(!cb){
+      // there is something wrong here...
+      // shouldn't have no pid and no cb.
+      // but its not appropriate to throw here...
+      // AND with no cb we can't pass an errback...
+      // fml
+    }
   }
 
   var str = '';
